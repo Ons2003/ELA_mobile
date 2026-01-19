@@ -1,0 +1,193 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'npm:@supabase/supabase-js@2'
+
+const ALLOWED_ORIGINS = [
+  'https://elyesliftacademy.com',
+  'https://www.elyesliftacademy.com',
+  'http://localhost:5173',
+]
+
+const resolveAllowedOrigin = (req: Request) => {
+  const origin = req.headers.get('Origin')
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    return origin
+  }
+  return ALLOWED_ORIGINS[0]
+}
+
+const buildCorsHeaders = (req: Request, options?: { methods?: string[] }) => {
+  const methods = options?.methods ?? ['GET', 'POST', 'OPTIONS']
+  const origin = resolveAllowedOrigin(req)
+
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': methods.join(', '),
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Max-Age': '86400',
+    Vary: 'Origin',
+    'X-Frame-Options': 'DENY',
+    'Content-Security-Policy': "frame-ancestors 'none'",
+    'X-Content-Type-Options': 'nosniff',
+    'Referrer-Policy': 'no-referrer',
+    'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+  }
+}
+
+const handleOptionsRequest = (req: Request, methods?: string[]) =>
+  new Response('ok', {
+    status: 204,
+    headers: buildCorsHeaders(req, { methods }),
+  })
+
+const allowedMethods = ['GET', 'POST', 'PUT', 'OPTIONS']
+
+serve(async (req) => {
+  const corsHeaders = buildCorsHeaders(req, { methods: allowedMethods })
+
+  if (req.method === 'OPTIONS') {
+    return handleOptionsRequest(req, allowedMethods)
+  }
+
+  try {
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    const url = new URL(req.url)
+    const pathSegments = url.pathname.split('/').filter(Boolean)
+    
+    // GET /programs - Get all active programs
+    if (req.method === 'GET' && pathSegments.length === 2) {
+      const { data: programs, error } = await supabaseClient
+        .from('programs')
+        .select('*')
+        .eq('is_active', true)
+        .order('is_popular', { ascending: false })
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+
+      return new Response(
+        JSON.stringify(programs),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // GET /programs/:id - Get specific program
+    if (req.method === 'GET' && pathSegments.length === 3) {
+      const programId = pathSegments[2]
+      
+      const { data: program, error } = await supabaseClient
+        .from('programs')
+        .select('*')
+        .eq('id', programId)
+        .single()
+
+      if (error) throw error
+
+      return new Response(
+        JSON.stringify(program),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // POST /programs - Create new program (admin only)
+    if (req.method === 'POST') {
+      const authHeader = req.headers.get('Authorization')
+      if (!authHeader) throw new Error('Authorization required')
+
+      const { data: { user }, error: authError } = await supabaseClient.auth.getUser(
+        authHeader.replace('Bearer ', '')
+      )
+      if (authError || !user) throw new Error('Invalid authorization')
+
+      // Check if user is admin
+      const { data: profile } = await supabaseClient
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      if (profile?.role !== 'admin') {
+        throw new Error('Admin access required')
+      }
+
+      const programData = await req.json()
+      
+      const { data: newProgram, error } = await supabaseClient
+        .from('programs')
+        .insert({
+          ...programData,
+          created_by: user.id
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      return new Response(
+        JSON.stringify(newProgram),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // PUT /programs/:id - Update program (admin only)
+    if (req.method === 'PUT' && pathSegments.length === 3) {
+      const programId = pathSegments[2]
+      const authHeader = req.headers.get('Authorization')
+      if (!authHeader) throw new Error('Authorization required')
+
+      const { data: { user }, error: authError } = await supabaseClient.auth.getUser(
+        authHeader.replace('Bearer ', '')
+      )
+      if (authError || !user) throw new Error('Invalid authorization')
+
+      // Check if user is admin
+      const { data: profile } = await supabaseClient
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      if (profile?.role !== 'admin') {
+        throw new Error('Admin access required')
+      }
+
+      const updateData = await req.json()
+      
+      const { data: updatedProgram, error } = await supabaseClient
+        .from('programs')
+        .update(updateData)
+        .eq('id', programId)
+        .select()
+        .single()
+
+      if (error) throw error
+
+      return new Response(
+        JSON.stringify(updatedProgram),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    return new Response(
+      JSON.stringify({ error: 'Route not found' }),
+      { 
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    )
+
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { 
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    )
+  }
+})

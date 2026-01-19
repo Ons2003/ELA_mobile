@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  :root {
+    --ela-top-nav-height: 3.5rem;
+    --ela-bottom-nav-height: 4.75rem;
+    --background: 8 10% 7%;
+    --foreground: 0 0% 98%;
+    --card: 10 8% 12%;
+    --card-foreground: 0 0% 98%;
+    --popover: 10 8% 10%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 72% 51%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 18%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 18%;
+    --muted-foreground: 0 0% 70%;
+    --accent: 0 0% 20%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 72% 42%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 0 72% 51%;
+    --radius: 1rem;
+  }
+
+  @media (min-width: 1024px) {
+    :root {
+      --ela-top-nav-height: 5rem;
+    }
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    width: 100%;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: var(--ela-top-nav-height);
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    background: radial-gradient(circle at top, rgba(255, 88, 88, 0.18), rgba(11, 9, 8, 0.92) 48%, #070707 100%);
+    color: hsl(var(--foreground));
+    overflow-x: hidden;
+    font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: contain;
+  }
+
+  img,
+  picture,
+  video,
+  canvas,
+  svg {
+    display: block;
+    max-width: 100%;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  @media (max-width: 1023px) {
+    html {
+      scroll-padding-top: calc(var(--ela-top-nav-height) + env(safe-area-inset-top));
+    }
+
+    body {
+      padding-bottom: calc(var(--ela-bottom-nav-height) + env(safe-area-inset-bottom));
+    }
+  }
+}
