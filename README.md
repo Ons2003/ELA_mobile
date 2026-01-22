@@ -23,3 +23,29 @@ Copy `.env.example` to `.env` and provide project-specific values:
 - `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` for Supabase connectivity
 - `VITE_ADMIN_EMAIL` to lock down the admin console to a single account
 - `ALLOWED_ORIGINS` to keep the Edge Functions CORS allow-list strict
+
+## Web app (Vite)
+
+Setup:
+- Ensure `.env` includes `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+- Install dependencies: `cmd /c npm install`
+
+Run:
+- `cmd /c npm run dev`
+- `cmd /c npm run build`
+- `cmd /c npm run preview`
+
+## Mobile app (Capacitor)
+
+Prereqs:
+- Build the web bundle: `cmd /c npm run build`
+- If you still have the Expo `android/` folder, rename or remove it before adding Capacitor.
+
+Initialize:
+- `cmd /c npx cap add android`
+- `cmd /c npx cap add ios`
+
+Sync + open:
+- `cmd /c npm run cap:sync`
+- `cmd /c npm run cap:open:android`
+- `cmd /c npm run cap:open:ios`

@@ -16,7 +16,7 @@ const securityHeaders = {
 
 export default defineConfig({
   plugins: [react()],
-  base: '/', // keep '/' unless you deploy under a subpath
+  base: process.env.VITE_PLATFORM === 'capacitor' ? './' : '/', // use './' for Capacitor webview assets
   server: {
     headers: securityHeaders,
   },

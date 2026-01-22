@@ -29,3 +29,8 @@ certs/
 *.pem
 *.crt
 *.key
+
+# Android signing keys
+*.jks
+*.keystore
+ela-release
